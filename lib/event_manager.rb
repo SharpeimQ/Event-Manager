@@ -1,8 +1,12 @@
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
+require 'date'
 
 puts 'Event Manager Initialized!'
+
+hour_counter = Hash.new(0)
+most_common_hour = 0
 
 def clean_zipcode(zipcode)
   zipcode.to_s.rjust(5, '0')[0..4]
@@ -43,6 +47,14 @@ def save_thank_you_letters(id, form_letter)
   end
 end
 
+def popular_hours(times, hour_counter)
+  date_time = times.split(' ')
+  time_format = '%H:%M'
+  time = Time.strptime(date_time[1], time_format)
+  hour_counter[time.hour] += 1
+  hour_counter.max_by { |hour, value| value }
+end
+
 contents = CSV.open(
   'event_attendees.csv',
   headers: true,
@@ -56,6 +68,8 @@ contents.each do |row|
   id = row[0]
   name = row[:first_name]
 
+  most_common_hour = popular_hours(row[:regdate], hour_counter)
+
   phone_number = clean_phone_numbers(row[:homephone])
 
   zipcode = clean_zipcode(row[:zipcode])
@@ -65,5 +79,6 @@ contents.each do |row|
   form_letter = erb_template.result(binding)
 
   save_thank_you_letters(id, form_letter)
-  puts phone_number
 end
+
+puts "#{most_common_hour} is/are the most popular hour(s)"
