@@ -7,6 +7,8 @@ puts 'Event Manager Initialized!'
 
 hour_counter = Hash.new(0)
 most_common_hour = 0
+wday_counter = Hash.new(0)
+most_common_day = -1
 
 def clean_zipcode(zipcode)
   zipcode.to_s.rjust(5, '0')[0..4]
@@ -48,11 +50,15 @@ def save_thank_you_letters(id, form_letter)
 end
 
 def popular_hours(times, hour_counter)
-  date_time = times.split(' ')
-  time_format = '%H:%M'
-  time = Time.strptime(date_time[1], time_format)
+  time = Time.strptime(times.split(' ')[1], '%H:%M')
   hour_counter[time.hour] += 1
   hour_counter.max_by { |hour, value| value }
+end
+
+def popular_days(days, wday_counter)
+  full_dates = Time.strptime(days.split(' ')[0], '%D')
+  wday_counter[full_dates.wday] += 1
+  wday_counter.max_by { |day, value| value }
 end
 
 contents = CSV.open(
@@ -70,6 +76,8 @@ contents.each do |row|
 
   most_common_hour = popular_hours(row[:regdate], hour_counter)
 
+  most_common_day = popular_days(row[:regdate], wday_counter)
+
   phone_number = clean_phone_numbers(row[:homephone])
 
   zipcode = clean_zipcode(row[:zipcode])
@@ -82,3 +90,4 @@ contents.each do |row|
 end
 
 puts "#{most_common_hour} is/are the most popular hour(s)"
+puts "#{Date::DAYNAMES[most_common_day[0]]} is the most popular weekday"
